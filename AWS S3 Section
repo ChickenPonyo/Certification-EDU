@@ -1,0 +1,200 @@
+AWS Architect Associate certification notes
+
+
+*Amazon S3*
+
+[What is S3?]
+ S3 is a cloud-based service that allows users to store and retrieve data through the use of 'buckets'
+- Provides you with unlimited storage (technically)
+
+[S3 Security]
+Bucket Policies
+- Define permissions for entire S3 buckets
+AWS PrivateLink:
+- Enables private network access to S3 (bypasses public internet for security)
+Cross-Origin Resource Sharing (CORS)
+- Allows restricted resources on a web page from another domain
+IAM Access Analyzer
+- Analyzes resource policies to ID risks
+Internetwork Traffic Privacy
+- Encrypts data between AWS services and Internet
+
+*Notes*
+- #1 security misconfiguration for S3 buckets is unrestricted access
+
+**Sub-Topics**
+Object Storage
+- Data storage architecture that manages data as objects
+S3 Console
+- Interface for user to upload and access data
+
+-------------------
+
+*S3 Objects*
+
+S3 Object
+- Contains data (akin to files), but are NOT infrastructure. These objects may consist of:
+-- Key: name of the object
+-- Value: the data itself
+--- Individual objects can be between 0 Bytes and 5 Terabytes in size
+-- VersionID: available when versioning is enabled
+-- Metadata: additional info tied to the object
+
+**Object Sub-Topics**
+- Etags: Way to detect when object contents are changed *without* downloading the contents
+-- Value is represented by a hashing function (MD5/SHA-1)
+-- Used for revalidation for cashing systems (assists with versioning)
+-- Does *not* reflect changes to metadata, only object contents
+- Object Prefixes: Simulates file-system folders in a flat hierarchy
+- Checksums
+- Object Metadata
+-- S3 allows you to attach metadata to S3 Objects
+-- System-Defined Metadata: data that only Amazon can control (generally)
+-- User-Defined Metadata: must start wtih 'x-amz-meta-' amd allows you to define whatever you wish
+- Object tags: used for resource tagging at the object level
+- Object Locking: makes data files immutable either indefinitely or fixed period of time
+-- Utilizes WORM (Write Once, Read Many) feature
+--- Useful with Healthcare/Finance where things are audited heavily
+-- Allows prevention of object deletion (turned on at creation of the *bucket*) for data integrity and regulatory compliance
+
+- Versioning
+
+-------------------
+
+*S3 Buckets*
+
+[What are S3 Buckets]
+Simply, put they are infrastructure that hold/contain S3 Objects
+- Can have folders that also hold objects
+- Allows users to set permissions and control access to buckets
+- Users can store where geographically the buckets are stored
+-- NOTE: S3 is a universal namespace, so bucket names must be unique (similar to an email within a domain)
+
+- Supports encryption
+
+- Various types of Buckets
+
+-- General Purpose Bucket (original bucket type) 
+--- Flat hierarchy storage (no subfolders)
+--- Used with all storage classes EXCEPT S3 Express One Zone storage class
+--- Default limit of 100 general buckets per account
+
+-- Directory Buckets
+--- Folder hierarchy
+--- Only be used with S3 Express One Zone storage class (single-digit millisecond performance on PUT and GET)
+--- Allows individual directories to scale horizontally
+--- 10 directory buckets per account
+
+**Bucket Structure**
+- Bucket Folders
+-- Technically not creating folders, its a 0 Byte S3 object that ends with a '/', indicating that its a folder
+--- Dont include metadata, permissions, and dont contain anything (cant be full or empty)
+
+**Rules**
+
+- Bucket naming rules
+-- Bucket names are used to form URL links for HTTP/S operations, and therefore follow similar rules
+-- 3-63 characters
+-- lowercase, number, periods, and hyphens allowed (no uppercase, underscore, or spaces)
+-- must begin and end with alphanumeric
+-- no two adjacent periods in a row
+-- cant be an IP format
+-- some prefixes are restricted due to other uses ('xn--', 'sthree-', 'sthree-configurator', etc)
+-- some suffixes are restricted ('-s3alias' and '--ol=s3')
+-- Must be unique across all AWS accounts and regions
+--- Bucket must be deleted before it's name can be reused
+-- If bucket is used with S3 Transfer Acceleration, it cant have periods in its name
+
+- Restrictions/Limitations
+-- By default can have 100 buckets (can create service request for up to 1000 buckets)
+
+- must empty a bucket before you can delete it
+
+- no max size for a bucket, nor max object count for a bucket
+-- Files in a bucket must be between 0 Bytes and 5 TBs, however
+-- Any file above 100MB should use a multi-part upload
+
+- S3 for AWS Outposts has limits (see Outpost section)
+
+- GET, PUT, LIST, and DELETE operations are designed for high availability/use
+-- CREATE or CONFIGURATION operations should be run less often\
+
+*Sub-Topics*
+
+S3 Bucket URI
+- URI (Uniform Resource Identifier) is a way to reference the address of S3 buckets and S3 objects
+-- s3://myexamplebucket/photo.jpg
+
+S3 CLI
+- 'aws s3' : High-level way to interact wiht S3 buckets and objects
+- 'aws s3api' : Low-level way to interact (must less day-to-day. Fine tuned control)
+- 'aws s3control' : Manages s3 access points, s3 batch operations, storage lens
+- 'aws s3outposts' : Manges endpoints for s3 outposts
+
+-------------------
+
+*S3 Endpoints*
+
+Standard Endpoints (IPv4)
+
+Dual-Stack Endpoints (IPv4 and IPv6)
+
+-------------------
+
+*S3 Storage Classes*
+
+Different classes find balance between price and functionality. Following are most-to-least expensive
+
+- S3 Standard (fast, available, durable)
+-- Default storage class
+-- 11 '9s' durability (99.999999999%)
+-- 4 '9s' availability
+-- Redundancy with 3+ Availability Zones (AZ)
+-- Uses: CDN, Big Data analytics, mobile/gaming apps, etc
+- S3 Intelligent Tiering
+-- Uses ML to analyze object usage and determine storage class tier (below)
+--- Frequent Access tier (default): remains while being accessed
+--- Infrequent Access Tier: moved after 30 days of no access
+--- Archive Instant Access Tier: moved after 90 days
+--- Deep Archive Access tier: moved after 180 days
+- S3 Express One Zone
+-- Single digit ms performance (special bucket type)
+-- Does not rely on multiple AZ (redundancy issue in exchange for speed)
+- S3 Standard-IA (Infrequent Access)
+-- If you access less than once a month
+- S3 One-Zone-IA
+-- same concept as above IA
+-- 11 '9s' durabiility
+-- 3 '9s' availability (slower than S3 standard)
+-- Redundancy with 3+ AZ
+-- Uses: Disaster Recovery, Backups, or other long-term data that isnt frequently accessed
+
+|NOTE|
+S3 Glacier is a separate stand-alone service. The following storage classes are similar functionality, but not technically the S3 Glacier service
+
+- S3 Glacier Instant Retrieval
+-- Long-term storage, but data is instantly available
+-- No attachment to S3 Glacier Vault service
+-- Uses: data that is RARELY accessed, but provides IMMEDIATE access in the event that its needed (rule of thumb is 'accessed once a quarter')
+-- Image hosting, online file-sharing, medical imaging, health records, etc
+- S3 Glacier Flexible Retrieval
+-- Has 3 retrieval tiers (1min-12hour)
+--- Expedited (1-5min): 250MB limit
+--- Standard (3-5hour): No limit / Default option
+--- Bulk Tier (5-12hour)
+-- Uses/Attached to S3 Glacier Vault service
+- S3 Glacier Deep Archive
+-- Has 2 retrieval tiers (1min-12hour)
+--- Standard (9-12hour): Default option
+--- Bulk Tier (12-48hour)
+-- Uses/Attached to S3 Glacier Vault service
+
+
+
+
+
+
+
+
+
+
